@@ -1,5 +1,6 @@
 package me.rishabhkhanna.sensors;
 
+import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -9,6 +10,7 @@ import android.support.constraint.solver.SolverVariable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.RelativeLayout;
 
 import java.util.List;
 
@@ -17,11 +19,13 @@ public class MainActivity extends AppCompatActivity {
     SensorManager sensorManager;
     Sensor accelSensor;
     SensorEventListener sensorEventListener;
+    Sensor proxySensor;
+    RelativeLayout relativeLayout;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        relativeLayout = (RelativeLayout) findViewById(R.id.relativeLayout);
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
 //        List<Sensor> sensorsList = sensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER);
 
@@ -29,13 +33,27 @@ public class MainActivity extends AppCompatActivity {
         accelSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
 
+        proxySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
+
+
         sensorEventListener = new SensorEventListener() {
             @Override
             public void onSensorChanged(SensorEvent event) {
                 if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER){
-                    Log.d(TAG, "onSensorChanged: X : " + event.values[0] );
-                    Log.d(TAG, "onSensorChanged: Y : " + event.values[1] );
-                    Log.d(TAG, "onSensorChanged: Z : " + event.values[2] );
+                    relativeLayout.setBackgroundColor(Color.rgb(
+                            getColor(event.values[0]),
+                            getColor(event.values[1]),
+                            getColor(event.values[2])
+                    ));
+                }
+
+                if(event.sensor.getType() == Sensor.TYPE_PROXIMITY){
+                    Log.d(TAG, "onSensorChanged: " + event.values[0]);
+                    if(event.values[0] == proxySensor.getMaximumRange()) {
+                        relativeLayout.setBackgroundColor(Color.BLACK);
+                    }else {
+                        relativeLayout.setBackgroundColor(Color.WHITE);
+                    }
                 }
             }
 
@@ -59,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         sensorManager.registerListener(sensorEventListener,accelSensor,1000 * 1000);
+        sensorManager.registerListener(sensorEventListener,proxySensor,1000 * 1000);
         super.onResume();
     }
 
@@ -67,4 +86,10 @@ public class MainActivity extends AppCompatActivity {
         sensorManager.unregisterListener(sensorEventListener);
         super.onPause();
     }
+
+    public int getColor(float value){
+        value = value + 12;
+        return (int)(value/24 * 255);
+    }
+
 }
